@@ -1,8 +1,7 @@
-#include <iostream>
-#include <fstream>
+#include "util.h"
 
-int main() {
-  std::cout << "hello" << std::endl;
+int main(int argc, char *argv[]) {
+  parse(argv[1]);
 
-  return 0;
+  return EXIT_SUCCESS;
 }
