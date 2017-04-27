@@ -16,115 +16,115 @@ void parse(JPEGImage &image, std::string &filename) {
       file.read(reinterpret_cast<char*>(&tag), 1);
       switch (tag) {
        case Tag::SOI:
-        std::cout << "SOI" << std::endl;
+        std::cerr << "SOI" << std::endl;
         break;
        case Tag::APP0:
         length = get_2bytes(file) - 2;
-        std::cout << "APP0: " << length << std::endl;
+        std::cerr << "APP0: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP1:
         length = get_2bytes(file) - 2;
-        std::cout << "APP1: " << length << std::endl;
+        std::cerr << "APP1: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP2:
         length = get_2bytes(file) - 2;
-        std::cout << "APP2: " << length << std::endl;
+        std::cerr << "APP2: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP3:
         length = get_2bytes(file) - 2;
-        std::cout << "APP3: " << length << std::endl;
+        std::cerr << "APP3: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP4:
         length = get_2bytes(file) - 2;
-        std::cout << "APP4: " << length << std::endl;
+        std::cerr << "APP4: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP5:
         length = get_2bytes(file) - 2;
-        std::cout << "APP5: " << length << std::endl;
+        std::cerr << "APP5: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP6:
         length = get_2bytes(file) - 2;
-        std::cout << "APP6: " << length << std::endl;
+        std::cerr << "APP6: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP7:
         length = get_2bytes(file) - 2;
-        std::cout << "APP7: " << length << std::endl;
+        std::cerr << "APP7: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP8:
         length = get_2bytes(file) - 2;
-        std::cout << "APP8: " << length << std::endl;
+        std::cerr << "APP8: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP9:
         length = get_2bytes(file) - 2;
-        std::cout << "APP9: " << length << std::endl;
+        std::cerr << "APP9: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP10:
         length = get_2bytes(file) - 2;
-        std::cout << "APP10: " << length << std::endl;
+        std::cerr << "APP10: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP11:
         length = get_2bytes(file) - 2;
-        std::cout << "APP11: " << length << std::endl;
+        std::cerr << "APP11: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP12:
         length = get_2bytes(file) - 2;
-        std::cout << "APP12: " << length << std::endl;
+        std::cerr << "APP12: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP13:
         length = get_2bytes(file) - 2;
-        std::cout << "APP13: " << length << std::endl;
+        std::cerr << "APP13: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP14:
         length = get_2bytes(file) - 2;
-        std::cout << "APP14: " << length << std::endl;
+        std::cerr << "APP14: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::APP15:
         length = get_2bytes(file) - 2;
-        std::cout << "APP15: " << length << std::endl;
+        std::cerr << "APP15: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::DQT:
         length = get_2bytes(file) - 2;
-        std::cout << "DQT: " << length << std::endl;
+        std::cerr << "DQT: " << length << std::endl;
         parse_dqt(image, file, length);
         break;
        case Tag::SOF0:
         length = get_2bytes(file) - 2;
-        std::cout << "SOF0: " << length << std::endl;
+        std::cerr << "SOF0: " << length << std::endl;
         parse_sof0(image, file, length);
         break;
        case Tag::DHT:
         length = get_2bytes(file) - 2;
-        std::cout << "DHT: " << length << std::endl;
+        std::cerr << "DHT: " << length << std::endl;
         parse_dht(image, file, length);
         break;
        case Tag::DRI:
         length = get_2bytes(file) - 2;
-        std::cout << "DRI: " << length << std::endl;
+        std::cerr << "DRI: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::SOS:
         length = get_2bytes(file) - 2;
-        std::cout << "SOS: " << length << std::endl;
+        std::cerr << "SOS: " << length << std::endl;
         file.seekg(length, file.cur);
         break;
        case Tag::EOI:
-        std::cout << "EOI" << std::endl;
+        std::cerr << "EOI" << std::endl;
         break;
       }
     }
