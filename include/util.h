@@ -1,6 +1,13 @@
+#ifndef UTIL
+#define UTIL
+
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <array>
+#include <vector>
+
+#include "jpeg.h"
 
 namespace Tag {
   static const unsigned char START = 0xff;
@@ -29,5 +36,11 @@ namespace Tag {
   static const unsigned char EOI = 0xd9;
 };
 
-void parse(std::string);
-int get_length(std::ifstream&);
+void parse(JPEGImage &, std::string &);
+unsigned char get_byte(std::ifstream &);
+int get_2bytes(std::ifstream &);
+void parse_dqt(JPEGImage &, std::ifstream &, int);
+void parse_sof0(JPEGImage &, std::ifstream &, int);
+void parse_dht(JPEGImage &, std::ifstream &, int);
+
+#endif
