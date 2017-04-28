@@ -12,13 +12,13 @@ OBJS = $(addprefix $(OBJ_DIR)/, $(notdir $(SRCS:.cc=.o)))
 
 LIBS =
 INCLUDE   = -I$(INC_DIR)
-CPPFLAGS += -Wall
+CPPFLAGS += -Wall -std=c++11
 LDFLAGS +=
 LDLIBS +=
 
 .PHONY: all clean
 
-all: $(TARGET)
+all: clean $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(COMPILER) $(LDFLAGS) $(LDLIBS) -o $@ $^

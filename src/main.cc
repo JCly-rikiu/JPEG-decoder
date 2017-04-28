@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
   std::string str(argv[1]);
   parse(image, str);
 
-  image.create_hts();
+  image.decode();
 
   return EXIT_SUCCESS;
 }
