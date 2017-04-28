@@ -1,6 +1,7 @@
 #include "util.h"
 
 void parse(JPEGImage &image, std::string &filename) {
+  // open file
   std::ifstream file(filename, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
     std::cerr << "Can not open jpeg file \"" << filename << "\"" << std::endl;
@@ -17,86 +18,6 @@ void parse(JPEGImage &image, std::string &filename) {
       switch (tag) {
        case Tag::SOI:
         std::cerr << "SOI" << std::endl;
-        break;
-       case Tag::APP0:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP0: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP1:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP1: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP2:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP2: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP3:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP3: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP4:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP4: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP5:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP5: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP6:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP6: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP7:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP7: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP8:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP8: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP9:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP9: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP10:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP10: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP11:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP11: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP12:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP12: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP13:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP13: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP14:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP14: " << length << std::endl;
-        file.seekg(length, file.cur);
-        break;
-       case Tag::APP15:
-        length = get_2bytes(file) - 2;
-        std::cerr << "APP15: " << length << std::endl;
-        file.seekg(length, file.cur);
         break;
        case Tag::DQT:
         length = get_2bytes(file) - 2;
@@ -121,11 +42,18 @@ void parse(JPEGImage &image, std::string &filename) {
        case Tag::SOS:
         length = get_2bytes(file) - 2;
         std::cerr << "SOS: " << length << std::endl;
-        file.seekg(length, file.cur);
+        parse_sos(image, file, length);
         break;
        case Tag::EOI:
         std::cerr << "EOI" << std::endl;
         break;
+       default:
+        if (tag >= Tag::APP0 && tag <= Tag::APP15) {
+          length = get_2bytes(file) - 2;
+          std::cerr << "APP" << static_cast<int>(tag - Tag::APP0) << ": " << length << std::endl;
+          file.seekg(length, file.cur);
+          break;
+        }
       }
     }
   }
@@ -150,9 +78,12 @@ int get_2bytes(std::ifstream &file) {
 
 void parse_dqt(JPEGImage &image, std::ifstream &file, int length) {
   while (length > 0) {
+    // 1byte (percision/qt_id)
     int value = static_cast<int>(get_byte(file));
     int precision = static_cast<int>(value >> 4);
+    int qt_id = static_cast<int>(value & 0x0f);
 
+    // 64 * (precision + 1) bytes (qt)
     std::array<int, 64> qt;
     for (int i = 0; i != 64; i++) {
       if (precision == 0)
@@ -160,29 +91,34 @@ void parse_dqt(JPEGImage &image, std::ifstream &file, int length) {
       else
         qt[i] = get_2bytes(file);
     }
+    image.set_qts(qt_id, qt);
 
-    image.set_qts(static_cast<int>(value & 0x0f), qt);
-
+    // maybe N qts
     length -= 64 * (precision + 1) + 1;
   }
 }
 
 void parse_sof0(JPEGImage &image, std::ifstream &file, int length) {
+  // 1byte (image precision)
   image.set_sof_precision(get_byte(file));
-  image.set_height(get_2bytes(file));
-  image.set_width(get_2bytes(file));
+  // 4bytes (image height/image width)
+  image.set_height(static_cast<int>(get_2bytes(file)));
+  image.set_width(static_cast<int>(get_2bytes(file)));
 
-  // skip 1:gray scale, 3:YCrCb, 4:CMYK
+  // skip 1byte (1:gray scale, 3:YCrCb, 4:CMYK)
   file.seekg(1, file.cur);
 
+  // (Y Cr Cb) each 3bytes (color_id, sample_factor, qt_id)
   for (int i = 0; i != 3; i++)
     image.set_color_factor(get_byte(file), get_byte(file), get_byte(file));
 }
 
 void parse_dht(JPEGImage &image, std::ifstream &file, int length) {
   while (length > 0) {
+    // 1byte (ht_id)
     int type = static_cast<int>(get_byte(file));
 
+    // 16bytes (digit numbers)
     std::array<int, 16> digits;
     int total = 0;
     for (int i = 0; i != 16; i++) {
@@ -190,12 +126,26 @@ void parse_dht(JPEGImage &image, std::ifstream &file, int length) {
       total += digits[i];
     }
 
+    // total * bytes (codewords)
     std::vector<int> codewords;
     for (int i = 0; i != total; i++)
       codewords.push_back(static_cast<int>(get_byte(file)));
 
     image.set_hts(type, digits, codewords);
 
+    // maybe N hts
     length -= 16 + total + 1;
   }
+}
+
+void parse_sos(JPEGImage &image, std::ifstream &file, int length) {
+  // skip 1byte (1:gray scale, 3:YCrCb, 4:CMYK)
+  file.seekg(1, file.cur);
+
+  // (Y Cr Cb) each 2bytes (color_id, DC_ht_id/AC_ht_id)
+  for (int i = 0; i != 3; i++)
+    image.set_color_ht_id(get_byte(file), get_byte(file));
+
+  // skip 3bytes (0x00 0x3f 0x00)
+  file.seekg(3, file.cur);
 }

@@ -26,9 +26,32 @@ int JPEGImage::get_width() {
 
 void JPEGImage::set_color_factor(unsigned char color_id, unsigned char sample_factor, unsigned char qt_id) {
   switch(color_id) {
-   case 0: this->y_qt_id = qt_id; break;
-   case 1: this->cr_qt_id = qt_id; break;
-   case 2: this->cb_qt_id = qt_id; break;
+   case 0:
+    this->y_qt_id = qt_id;
+    this->y_s = sample_factor;
+    break;
+   case 1:
+    this->cr_qt_id = qt_id;
+    this->cr_s = sample_factor;
+    break;
+   case 2:
+    this->cb_qt_id = qt_id;
+    this->cb_s = sample_factor;
+    break;
+  }
+}
+
+void JPEGImage::set_color_ht_id(unsigned char color_id, unsigned char ht_id) {
+  switch(color_id) {
+   case 0:
+    this->y_ht_id = ht_id;
+    break;
+   case 1:
+    this->cr_ht_id = ht_id;
+    break;
+   case 2:
+    this->cb_ht_id = ht_id;
+    break;
   }
 }
 
@@ -53,12 +76,13 @@ int JPEGImage::convert_ht_id(int ht_id) {
 void JPEGImage::create_hts() {
   for (int ht_id = 0; ht_id != 4; ht_id++) {
     std::vector<node> ht;
+    std::vector<mask> ht_mask;
 
     node head = {-1, -1, -1};
     ht.push_back(head);
 
     int count = 0;
-    int code = 0;
+    unsigned int code = 0;
     for (int digit = 0; digit != 16; digit++) {
       if (hts_digits[ht_id][digit] == 0) {
         code <<= 1;
@@ -75,6 +99,9 @@ void JPEGImage::create_hts() {
             now = grow_ht(ht, now, code_bits[j]);
         }
 
+        mask new_mask = { code << (16 - digit - 1), hts_codewords[ht_id][count], digit + 1 };
+        ht_mask.push_back(new_mask);
+
         count++;
         code++;
       }
@@ -82,6 +109,7 @@ void JPEGImage::create_hts() {
     }
 
     this->hts[ht_id] = ht;
+    this->hts_mask[ht_id] = ht_mask;
   }
 
   std::cerr << "HTs created." << std::endl;
