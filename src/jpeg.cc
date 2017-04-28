@@ -152,3 +152,7 @@ void JPEGImage::grow_ht(std::vector<node> &ht, int now, bool bit, int value) {
     }
   }
 }
+
+void JPEGImage::set_data(std::vector<unsigned char> &data) {
+  this->data = data;
+}

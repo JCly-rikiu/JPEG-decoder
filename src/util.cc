@@ -8,12 +8,14 @@ void parse(JPEGImage &image, std::string &filename) {
     exit(EXIT_FAILURE);
   }
 
-  unsigned char tag;
+  bool image_data = false;
+  std::vector<unsigned char> data;
   while (!file.eof()) {
+    unsigned char tag = 0;
     file.read(reinterpret_cast<char*>(&tag), 1);
 
-    int length;
-    if (tag == Tag::START) {
+    if (tag == Tag::FF) {
+      int length;
       file.read(reinterpret_cast<char*>(&tag), 1);
       switch (tag) {
        case Tag::SOI:
@@ -43,9 +45,17 @@ void parse(JPEGImage &image, std::string &filename) {
         length = get_2bytes(file) - 2;
         std::cerr << "SOS: " << length << std::endl;
         parse_sos(image, file, length);
+        image_data = true;
         break;
        case Tag::EOI:
+        image_data = false;
+        std::cerr << "Data size: " << data.size() << std::endl;
+        image.set_data(data);
         std::cerr << "EOI" << std::endl;
+        break;
+       case Tag::DATA:
+        if (image_data)
+          data.push_back(Tag::FF);
         break;
        default:
         if (tag >= Tag::APP0 && tag <= Tag::APP15) {
@@ -54,7 +64,16 @@ void parse(JPEGImage &image, std::string &filename) {
           file.seekg(length, file.cur);
           break;
         }
+
+        // if (tag >= Tag::RST0 && tag <= Tag::RST7) {
+        // }
+
+        if (image_data)
+          data.push_back(tag);
       }
+    } else {
+      if (image_data)
+        data.push_back(tag);
     }
   }
 

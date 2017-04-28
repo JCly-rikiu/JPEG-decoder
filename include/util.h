@@ -10,7 +10,7 @@
 #include "jpeg.h"
 
 namespace Tag {
-  static const unsigned char START = 0xff;
+  static const unsigned char FF = 0xff;
   static const unsigned char SOI = 0xd8;
   static const unsigned char APP0 = 0xe0;
   static const unsigned char APP15 = 0xef;
@@ -20,6 +20,9 @@ namespace Tag {
   static const unsigned char DRI = 0xdd;
   static const unsigned char SOS = 0xda;
   static const unsigned char EOI = 0xd9;
+  static const unsigned char DATA = 0x00;
+  static const unsigned char RST0 = 0xd0;
+  static const unsigned char RST7 = 0xd7;
 };
 
 void parse(JPEGImage &, std::string &);

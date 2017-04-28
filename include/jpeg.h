@@ -31,6 +31,7 @@ private:
   std::array<std::vector<int>, 4> hts_codewords;
   std::array<std::vector<node>, 4> hts;
   std::array<std::vector<mask>, 4> hts_mask;
+  std::vector<unsigned char> data;
 
   int convert_ht_id(int);
   int grow_ht(std::vector<node> &, int, bool);
@@ -48,6 +49,7 @@ public:
   void set_qts(int, std::array<int, 64> &);
   void set_hts(int, std::array<int, 16> &, std::vector<int> &);
   void create_hts();
+  void set_data(std::vector<unsigned char> &);
 };
 
 #endif
