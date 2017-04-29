@@ -108,6 +108,7 @@ void JPEGImage::decode() {
   decode_data();
   dc_diff_decode();
   dequantize();
+  inverse_zigzag();
 }
 
 int JPEGImage::convert_ht_id(int ht_id) {
@@ -302,5 +303,37 @@ void JPEGImage::dequantize() {
       std::transform(block.begin(), block.end(), cr_qt.begin(), block.begin(), std::multiplies<int>());
     for (auto &block : m.cb)
       std::transform(block.begin(), block.end(), cb_qt.begin(), block.begin(), std::multiplies<int>());
+  }
+}
+
+void JPEGImage::inverse_zigzag() {
+  for (auto &m : this->mcus) {
+    for (auto &block : m.y)
+      zigzag_process(block);
+    for (auto &block : m.cr)
+      zigzag_process(block);
+    for (auto &block : m.cb)
+      zigzag_process(block);
+  }
+}
+
+void JPEGImage::zigzag_process(std::array<int, 64> &block) {
+  auto temp = block;
+  int count = 0;
+  for (int sum = 0; sum != 8; sum++) {
+    if ((sum & 1) == 1)
+      for (int i = 0; i != sum + 1; i++)
+        block[i * 8 + sum - i] = temp[count++];
+    else
+      for (int i = sum; i >= 0; i--)
+        block[i * 8 + sum - i] = temp[count++];
+  }
+  for (int sum = 8; sum != 15; sum++)  {
+    if ((sum & 1) == 1)
+      for (int i = sum - 7; i != 8; i++)
+        block[i * 8 + sum - i] = temp[count++];
+    else
+      for (int i = 7; i >= sum - 7; i--)
+        block[i * 8 + sum - i] = temp[count++];
   }
 }

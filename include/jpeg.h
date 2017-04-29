@@ -54,6 +54,8 @@ private:
   unsigned int ask_now_bits(int &, int);
   void dc_diff_decode();
   void dequantize();
+  void inverse_zigzag();
+  void zigzag_process(std::array<int, 64> &);
 
 public:
   JPEGImage();
