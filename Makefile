@@ -1,4 +1,4 @@
-COMPILER = g++
+COMPILER = clang++
 
 SRC_DIR = ./src
 OBJ_DIR = ./obj
@@ -12,7 +12,7 @@ OBJS = $(addprefix $(OBJ_DIR)/, $(notdir $(SRCS:.cc=.o)))
 
 LIBS =
 INCLUDE   = -I$(INC_DIR)
-CPPFLAGS += -Wall -std=c++11
+CPPFLAGS += -Wall -std=c++11 -O2
 LDFLAGS +=
 LDLIBS +=
 

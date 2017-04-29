@@ -17,8 +17,6 @@ private:
   };
 
   struct mcu {
-    int height;
-    int width;
     std::vector<std::array<int, 64>> y;
     std::vector<std::array<int, 64>> cr;
     std::vector<std::array<int, 64>> cb;
@@ -39,13 +37,17 @@ private:
   std::array<std::vector<codeword>, 4> hts;
   std::array<unsigned int, 16> mask;
   std::vector<mcu> mcus;
+  int mcu_height;
+  int mcu_width;
+  int mcu_h_size;
+  int mcu_w_size;
   std::vector<unsigned char> data;
   std::vector<unsigned char>::size_type data_pos;
   unsigned int now;
   int now_length;
   unsigned int buffer;
   int buffer_length;
-
+  std::vector<std::vector<int>> image;
 
   int convert_ht_id(int);
   void create_hts();
@@ -63,6 +65,8 @@ private:
   void inverse_dct();
   void idct_process(std::array<int, 64> &);
   int idct(std::array<int, 64> &, int x, int y);
+  void to_rgb_image();
+  void check_rgb_valid(int &);
 
 public:
   JPEGImage();

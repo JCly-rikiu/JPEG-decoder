@@ -111,6 +111,7 @@ void JPEGImage::decode() {
   dequantize();
   inverse_zigzag();
   inverse_dct();
+  to_rgb_image();
 }
 
 int JPEGImage::convert_ht_id(int ht_id) {
@@ -159,21 +160,18 @@ void JPEGImage::create_hts() {
 }
 
 void JPEGImage::decode_data() {
-  int mcu_height = static_cast<int>(this->v_max) * 8;
-  int mcu_width = static_cast<int>(this->h_max) * 8;
-  std::cerr << "mcu height pixel: " << mcu_height << " mcu width pixel: " << mcu_width << std::endl;
+  this->mcu_height = static_cast<int>(this->v_max) * 8;
+  this->mcu_width = static_cast<int>(this->h_max) * 8;
+  std::cerr << "mcu height pixel: " << this->mcu_height << " mcu width pixel: " << this->mcu_width << std::endl;
 
-  int mcu_h_size = this->height / mcu_height;
-  if (this->height % mcu_height != 0) mcu_h_size++;
-  int mcu_w_size = this->width / mcu_width;
-  if (this->width % mcu_width != 0) mcu_w_size++;
-  std::cerr << "mcu height num: " << mcu_h_size << " mcu width num: " << mcu_w_size << std::endl;
+  this->mcu_h_size = this->height / this->mcu_height;
+  if (this->height % this->mcu_height != 0) this->mcu_h_size++;
+  this->mcu_w_size = this->width / this->mcu_width;
+  if (this->width % this->mcu_width != 0) this->mcu_w_size++;
+  std::cerr << "mcu height num: " << this->mcu_h_size << " mcu width num: " << this->mcu_w_size << std::endl;
 
-  for (int mcu_i = 0; mcu_i != mcu_h_size * mcu_w_size; mcu_i++) {
+  for (int mcu_i = 0; mcu_i != this->mcu_h_size * this->mcu_w_size; mcu_i++) {
     mcu m;
-    m.height = mcu_height;
-    m.width = mcu_width;
-
     for (int y_i = 0; y_i != this->y_s_v * this->y_s_h; y_i++) {
       m.y.push_back(build_block(this->y_dc_ht_id, this->y_ac_ht_id));
     }
@@ -375,5 +373,54 @@ int JPEGImage::idct(std::array<int, 64> &block, int x, int y) {
     }
   }
 
-  return static_cast<int>(std::round(sum / 4));
+  return static_cast<int>(std::round(sum / 4)) + 128;
+}
+
+void JPEGImage::to_rgb_image() {
+  this->image = std::vector<std::vector<int>>(this->height);
+  std::for_each(this->image.begin(), this->image.end(), [&](std::vector<int> &v) { v = std::vector<int>(this->width); } );
+
+  for (int mcu_i = 0; mcu_i != this->mcu_h_size; mcu_i++) {
+    for (int mcu_j = 0; mcu_j != this->mcu_w_size; mcu_j++) {
+      mcu m = this->mcus[mcu_i * this->mcu_w_size + mcu_j];
+      for (int i = 0; i != this->mcu_height; i++) {
+        for (int j = 0; j != this->mcu_width; j++) {
+          int x = mcu_i * this->mcu_height + i;
+          int y = mcu_j * this->mcu_width + j;
+
+          if (x >= this->height || y >= this->width)
+            continue;
+
+          int y_i = i / (this->v_max / this->y_s_v);
+          int y_j = j / (this->h_max / this->y_s_h);
+          double color_y = m.y[(y_i / 8) * this->y_s_h + (y_j / 8)][(y_i % 8) * 8 + (y_j % 8)];
+
+          int cr_i = i / (this->v_max / this->cr_s_v);
+          int cr_j = j / (this->h_max / this->cr_s_h);
+          double color_cr = m.cr[(cr_i / 8) * this->cr_s_h + (cr_j / 8)][(cr_i % 8) * 8 + (cr_j % 8)];
+
+          int cb_i = i / (this->v_max / this->cb_s_v);
+          int cb_j = j / (this->h_max / this->cb_s_h);
+          double color_cb = m.cb[(cb_i / 8) * this->cb_s_h + (cb_j / 8)][(cb_i % 8) * 8 + (cb_j % 8)];
+
+          int r = static_cast<int>(std::round(color_y + 1.402 * (color_cr - 128)));
+          int g = static_cast<int>(std::round(color_y - 0.344136 * (color_cb - 128) - 0.714136 * (color_cr - 128)));
+          int b = static_cast<int>(std::round(color_y + 1.772 * (color_cb - 128)));
+
+          check_rgb_valid(r);
+          check_rgb_valid(g);
+          check_rgb_valid(b);
+
+          this->image[x][y] = (r << 16) | (g << 8) | b;
+        }
+      }
+    }
+  }
+}
+
+void JPEGImage::check_rgb_valid(int &v) {
+  if (v < 0)
+    v = 0;
+  else if (v > 255)
+    v = 255;
 }

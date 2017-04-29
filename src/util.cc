@@ -10,9 +10,11 @@ void parse(JPEGImage &image, std::string &filename) {
 
   bool image_data = false;
   std::vector<unsigned char> data;
-  while (!file.eof()) {
+  while (true) {
     unsigned char tag = 0;
     tag = get_byte(file);
+    if (file.eof())
+      break;
 
     if (tag == Tag::FF) {
       int length;
