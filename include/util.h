@@ -31,6 +31,7 @@ int get_2bytes(std::ifstream &);
 void parse_dqt(JPEGImage &, std::ifstream &, int);
 void parse_sof0(JPEGImage &, std::ifstream &, int);
 void parse_dht(JPEGImage &, std::ifstream &, int);
+void parse_dri(JPEGImage &, std::ifstream &, int);
 void parse_sos(JPEGImage &, std::ifstream &, int);
 std::string bmp_filename(std::string);
 

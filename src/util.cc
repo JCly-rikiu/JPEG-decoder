@@ -25,33 +25,38 @@ void parse(JPEGImage &image, const std::string &filename) {
         break;
        case Tag::DQT:
         length = get_2bytes(file) - 2;
-        std::cerr << "DQT: " << length << std::endl;
+        std::cerr << "DQT" << std::endl;
+        std::cerr << "  length: " << length << std::endl;
         parse_dqt(image, file, length);
         break;
        case Tag::SOF0:
         length = get_2bytes(file) - 2;
-        std::cerr << "SOF0: " << length << std::endl;
+        std::cerr << "SOF0" << std::endl;
+        std::cerr << "  length: " << length << std::endl;
         parse_sof0(image, file, length);
         break;
        case Tag::DHT:
         length = get_2bytes(file) - 2;
-        std::cerr << "DHT: " << length << std::endl;
+        std::cerr << "DHT" << std::endl;
+        std::cerr << "  length: " << length << std::endl;
         parse_dht(image, file, length);
         break;
        case Tag::DRI:
         length = get_2bytes(file) - 2;
-        std::cerr << "DRI: " << length << std::endl;
-        file.seekg(length, file.cur);
+        std::cerr << "DRI" << std::endl;
+        std::cerr << "  length: " << length << std::endl;
+        parse_dri(image, file, length);
         break;
        case Tag::SOS:
         length = get_2bytes(file) - 2;
-        std::cerr << "SOS: " << length << std::endl;
+        std::cerr << "SOS" << std::endl;
+        std::cerr << "  length: " << length << std::endl;
         parse_sos(image, file, length);
         image_data = true;
         break;
        case Tag::EOI:
         image_data = false;
-        std::cerr << "Data size: " << data.size() << std::endl;
+        std::cerr << "  data size: " << data.size() << std::endl;
         image.set_data(data);
         std::cerr << "EOI" << std::endl;
         break;
@@ -62,13 +67,15 @@ void parse(JPEGImage &image, const std::string &filename) {
        default:
         if (tag >= Tag::APP0 && tag <= Tag::APP15) {
           length = get_2bytes(file) - 2;
-          std::cerr << "APP" << static_cast<int>(tag - Tag::APP0) << ": " << length << std::endl;
+          std::cerr << "APP" << static_cast<int>(tag - Tag::APP0) << std::endl;
+          std::cerr << "  length: " << length << std::endl;
           file.seekg(length, file.cur);
           break;
         }
 
-        // if (tag >= Tag::RST0 && tag <= Tag::RST7) {
-        // }
+        if (tag >= Tag::RST0 && tag <= Tag::RST7) {
+          break;
+        }
 
         if (image_data)
           data.push_back(tag);
@@ -120,13 +127,21 @@ void parse_dqt(JPEGImage &image, std::ifstream &file, int length) {
 
 void parse_sof0(JPEGImage &image, std::ifstream &file, int length) {
   // 1byte (image precision)
-  image.set_sof_precision(get_byte(file));
+  unsigned char precision = get_byte(file);
+  image.set_sof_precision(precision);
   // 4bytes (image height/image width)
-  image.set_height(get_2bytes(file));
-  image.set_width(get_2bytes(file));
+  int height = get_2bytes(file);
+  int width = get_2bytes(file);
+  image.set_height(height);
+  image.set_width(width);
 
   // skip 1byte (1:gray scale, 3:YCrCb, 4:CMYK)
-  file.seekg(1, file.cur);
+  unsigned char color_type = get_byte(file);
+
+  std::cerr << "  precision: " << static_cast<int>(precision) << std::endl;
+  std::cerr << "  height: " << height << std::endl;
+  std::cerr << "  width: " << width << std::endl;
+  std::cerr << "  color type: " << static_cast<int>(color_type) << std::endl;
 
   // (Y Cr Cb) each 3bytes (color_id, sample_factor, qt_id)
   for (int i = 0; i != 3; i++) {
@@ -134,6 +149,8 @@ void parse_sof0(JPEGImage &image, std::ifstream &file, int length) {
     unsigned char sample_factor = get_byte(file);
     unsigned char qt_id = get_byte(file);
     image.set_color_factor(color_id, sample_factor, qt_id);
+
+    std::cerr << "  " << static_cast<int>(color_id) << " " << static_cast<int>(sample_factor >> 4) << " " << static_cast<int>(sample_factor & 0x0f) << " " << static_cast<int>(qt_id) << std::endl;
   }
 }
 
@@ -160,6 +177,13 @@ void parse_dht(JPEGImage &image, std::ifstream &file, int length) {
     // maybe N hts
     length -= 16 + total + 1;
   }
+}
+
+void parse_dri(JPEGImage &image, std::ifstream &file, int length) {
+  int rst = static_cast<int>(get_2bytes(file));
+  std::cerr << "  rst: " << rst << std::endl;
+
+  image.set_rst(rst);
 }
 
 void parse_sos(JPEGImage &image, std::ifstream &file, int length) {

@@ -4,6 +4,8 @@ JPEGImage::JPEGImage() {
   this->v_max = 0;
   this->h_max = 0;
 
+  this->rst = -1;
+
   this->data_pos = 0;
   this->now = 0;
   this->now_length = 0;
@@ -89,12 +91,16 @@ void JPEGImage::set_hts(int ht_id, std::array<int, 16> &digits, std::vector<int>
   this->hts_codewords[ht_id] = codewords;
 }
 
+void JPEGImage::set_rst(int rst) {
+  this->rst = rst;
+}
+
 void JPEGImage::set_data(std::vector<unsigned char> &data) {
   this->data = data;
 }
 
 void JPEGImage::decode() {
-  std::cerr << "Start decoding..." << std::endl;
+  std::cerr << "\nStart decoding...\n" << std::endl;
   create_hts();
   decode_data();
   dc_diff_decode();
@@ -102,7 +108,7 @@ void JPEGImage::decode() {
   inverse_zigzag();
   inverse_dct();
   to_rgb_image();
-  std::cerr << "Decoding finished." << std::endl;
+  std::cerr << "\nDecoding finished.\n" << std::endl;
 }
 
 void JPEGImage::save_to_bmp(const std::string &filename) {
@@ -112,9 +118,12 @@ void JPEGImage::save_to_bmp(const std::string &filename) {
       bmp.set_pixel(j, i, this->image[i][j]);
 
   bmp.save_image(filename);
+  std::cerr << "Save to: " << filename << std::endl;
 }
 
 void JPEGImage::create_hts() {
+  std::cerr << "[Create HTs]" << std::endl;
+
   for (int ht_id = 0; ht_id != 4; ht_id++) {
     std::vector<codeword> ht;
 
@@ -147,22 +156,28 @@ void JPEGImage::create_hts() {
     temp <<= 1;
     temp++;
   }
-
-  std::cerr << "HTs created." << std::endl;
 }
 
 void JPEGImage::decode_data() {
+  std::cerr << "[Decode data]" << std::endl;
+
   this->mcu_height = static_cast<int>(this->v_max) * 8;
   this->mcu_width = static_cast<int>(this->h_max) * 8;
-  std::cerr << "mcu height pixel: " << this->mcu_height << " mcu width pixel: " << this->mcu_width << std::endl;
+  std::cerr << "  mcu height pixel: " << this->mcu_height << " mcu width pixel: " << this->mcu_width << std::endl;
 
   this->mcu_h_size = this->height / this->mcu_height;
   if (this->height % this->mcu_height != 0) this->mcu_h_size++;
   this->mcu_w_size = this->width / this->mcu_width;
   if (this->width % this->mcu_width != 0) this->mcu_w_size++;
-  std::cerr << "mcu height num: " << this->mcu_h_size << " mcu width num: " << this->mcu_w_size << std::endl;
+  std::cerr << "  mcu height num: " << this->mcu_h_size << " mcu width num: " << this->mcu_w_size << std::endl;
 
+  this->mcus.reserve(this->mcu_h_size * this->mcu_w_size);
   for (int mcu_i = 0; mcu_i != this->mcu_h_size * this->mcu_w_size; mcu_i++) {
+    if (this->rst != -1 && mcu_i % this->rst == 0) {
+      int remain = (this->now_length + this->buffer_length) % 8;
+      ask_now_bits(remain);
+    }
+
     mcu m;
     for (int y_i = 0; y_i != this->y_s_v * this->y_s_h; y_i++) {
       m.y.push_back(build_block(this->y_dc_ht_id, this->y_ac_ht_id));
@@ -176,8 +191,7 @@ void JPEGImage::decode_data() {
 
     this->mcus.push_back(m);
   }
-
-  std::cerr << "data pos: " << this->data_pos << std::endl;
+  std::cerr << "  data pos: " << this->data_pos << std::endl;
 }
 
 std::array<int, 64> JPEGImage::build_block(int dc_ht_id, int ac_ht_id) {
@@ -229,7 +243,7 @@ void JPEGImage::align() {
 }
 
 unsigned int JPEGImage::ask_buffer_bits(int bits) {
-  if (bits == 0)
+  if (bits == 0 || this->buffer_length < 0)
     return 0;
 
   while (this->buffer_length <= 16 && this->data_pos < this->data.size()) {
@@ -248,7 +262,7 @@ unsigned int JPEGImage::ask_buffer_bits(int bits) {
 }
 
 unsigned int JPEGImage::ask_now_bits(int bits) {
-  if (bits == 0)
+  if (bits == 0 || this->now_length < 0)
     return 0;
 
   align();
@@ -262,11 +276,20 @@ unsigned int JPEGImage::ask_now_bits(int bits) {
 }
 
 void JPEGImage::dc_diff_decode() {
+  std::cerr << "[DC Diff]" << std::endl;
+
   int last_y = 0;
   int last_cr = 0;
   int last_cb = 0;
 
+  int count = 0;
   for (auto &m : this->mcus) {
+    if (this->rst != -1) {
+      if (count == this->rst)
+        last_y = last_cr = last_cb = count = 0;
+      count++;
+    }
+
     for (auto &block : m.y) {
       block[0] += last_y;
       last_y = block[0];
@@ -279,10 +302,13 @@ void JPEGImage::dc_diff_decode() {
       block[0] += last_cb;
       last_cb = block[0];
     }
+
   }
 }
 
 void JPEGImage::dequantize() {
+  std::cerr << "[Dequantize]" << std::endl;
+
   auto y_qt = this->qts[this->y_qt_id];
   auto cr_qt = this->qts[this->cr_qt_id];
   auto cb_qt = this->qts[this->cb_qt_id];
@@ -298,6 +324,8 @@ void JPEGImage::dequantize() {
 }
 
 void JPEGImage::inverse_zigzag() {
+  std::cerr << "[Inverse zigzag]" << std::endl;
+
   std::array<int, 64> table;
   int count = 0;
   for (int sum = 0; sum != 8; sum++) {
@@ -335,6 +363,9 @@ void JPEGImage::zigzag_process(std::array<int, 64> &block, std::array<int, 64> &
 }
 
 void JPEGImage::inverse_dct() {
+  std::cerr << "[Inverse DCT] ";
+  std::time_t t = std::time(nullptr);
+
   for (auto &m : this->mcus) {
     for (auto &block : m.y)
       idct_process(block);
@@ -343,6 +374,8 @@ void JPEGImage::inverse_dct() {
     for (auto &block : m.cb)
       idct_process(block);
   }
+
+  std::cerr << std::time(nullptr) - t << "s." << std::endl;
 }
 
 void JPEGImage::idct_process(std::array<int, 64> &block) {
@@ -369,6 +402,8 @@ int JPEGImage::idct(std::array<int, 64> &block, int x, int y) {
 }
 
 void JPEGImage::to_rgb_image() {
+  std::cerr << "[To RGB]" << std::endl;
+
   this->image = std::vector<std::vector<rgb_t>>(this->height);
   std::for_each(this->image.begin(), this->image.end(), [&](std::vector<rgb_t> &v) { v = std::vector<rgb_t>(this->width); } );
 

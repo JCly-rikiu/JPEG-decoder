@@ -7,6 +7,7 @@
 #include <bitset>
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 
 #include "bitmap_image.hpp"
 
@@ -38,6 +39,7 @@ private:
   std::array<std::vector<int>, 4> hts_codewords;
   std::array<std::vector<codeword>, 4> hts;
   std::array<unsigned int, 16> mask;
+  int rst;
   std::vector<mcu> mcus;
   int mcu_height;
   int mcu_width;
@@ -80,6 +82,7 @@ public:
   void set_color_ht_id(unsigned char, unsigned char);
   void set_qts(int, std::array<int, 64> &);
   void set_hts(int, std::array<int, 16> &, std::vector<int> &);
+  void set_rst(int);
   void set_data(std::vector<unsigned char> &);
   void decode();
   void save_to_bmp(const std::string &);
