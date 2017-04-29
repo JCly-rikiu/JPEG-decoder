@@ -53,6 +53,7 @@ private:
   unsigned int ask_buffer_bits(int &, int);
   unsigned int ask_now_bits(int &, int);
   void dc_diff_decode();
+  void dequantize();
 
 public:
   JPEGImage();

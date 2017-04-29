@@ -107,6 +107,7 @@ void JPEGImage::decode() {
   create_hts();
   decode_data();
   dc_diff_decode();
+  dequantize();
 }
 
 int JPEGImage::convert_ht_id(int ht_id) {
@@ -286,5 +287,20 @@ void JPEGImage::dc_diff_decode() {
       block[0] += last_cb;
       last_cb = block[0];
     }
+  }
+}
+
+void JPEGImage::dequantize() {
+  auto y_qt = this->qts[this->y_qt_id];
+  auto cr_qt = this->qts[this->cr_qt_id];
+  auto cb_qt = this->qts[this->cb_qt_id];
+
+  for (auto &m : this->mcus) {
+    for (auto &block : m.y)
+      std::transform(block.begin(), block.end(), y_qt.begin(), block.begin(), std::multiplies<int>());
+    for (auto &block : m.cr)
+      std::transform(block.begin(), block.end(), cr_qt.begin(), block.begin(), std::multiplies<int>());
+    for (auto &block : m.cb)
+      std::transform(block.begin(), block.end(), cb_qt.begin(), block.begin(), std::multiplies<int>());
   }
 }
