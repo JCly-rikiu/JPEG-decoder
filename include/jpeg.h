@@ -55,7 +55,7 @@ private:
   void dc_diff_decode();
   void dequantize();
   void inverse_zigzag();
-  void zigzag_process(std::array<int, 64> &);
+  void zigzag_process(std::array<int, 64> &, std::array<int, 64> &);
 
 public:
   JPEGImage();
