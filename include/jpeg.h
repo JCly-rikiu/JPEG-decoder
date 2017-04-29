@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <bitset>
+#include <cmath>
 
 class JPEGImage {
 private:
@@ -56,6 +57,9 @@ private:
   void dequantize();
   void inverse_zigzag();
   void zigzag_process(std::array<int, 64> &, std::array<int, 64> &);
+  void inverse_dct();
+  void idct_process(std::array<int, 64> &);
+  int idct(std::array<int, 64> &, int x, int y);
 
 public:
   JPEGImage();

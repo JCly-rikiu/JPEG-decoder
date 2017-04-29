@@ -109,6 +109,7 @@ void JPEGImage::decode() {
   dc_diff_decode();
   dequantize();
   inverse_zigzag();
+  inverse_dct();
 }
 
 int JPEGImage::convert_ht_id(int ht_id) {
@@ -341,4 +342,38 @@ void JPEGImage::zigzag_process(std::array<int, 64> &block, std::array<int, 64> &
   auto temp = block;
   for (int i = 0; i != 64; i++)
     block[table[i]] = temp[i];
+}
+
+void JPEGImage::inverse_dct() {
+  for (auto &m : this->mcus) {
+    for (auto &block : m.y)
+      idct_process(block);
+    for (auto &block : m.cr)
+      idct_process(block);
+    for (auto &block : m.cb)
+      idct_process(block);
+  }
+}
+
+void JPEGImage::idct_process(std::array<int, 64> &block) {
+  auto temp = block;
+  for (int i = 0; i != 8; i++)
+    for (int j = 0; j != 8; j++)
+      block[i * 8 + j] = idct(temp, i, j);
+}
+
+int JPEGImage::idct(std::array<int, 64> &block, int x, int y) {
+  double sum = 0.0;
+  const double pi = std::acos(-1);
+  for (int u = 0; u != 8; u++) {
+    for (int v = 0; v != 8; v++) {
+      double c = 1.0;
+      if (u == 0) c *= (1 / std::sqrt(2));
+      if (v == 0) c *= (1 / std::sqrt(2));
+
+      sum += c * block[u * 8 + v] * std::cos((2 * x + 1) * u * pi / 16) * std::cos((2 * y + 1) * v * pi / 16);
+    }
+  }
+
+  return static_cast<int>(std::round(sum / 4));
 }
