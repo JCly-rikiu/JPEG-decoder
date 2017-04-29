@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "bitmap_image.hpp"
+
 class JPEGImage {
 private:
   struct codeword {
@@ -47,9 +49,8 @@ private:
   int now_length;
   unsigned int buffer;
   int buffer_length;
-  std::vector<std::vector<int>> image;
+  std::vector<std::vector<rgb_t>> image;
 
-  int convert_ht_id(int);
   void create_hts();
   void decode_data();
   std::array<int, 64> build_block(int, int);
@@ -65,23 +66,23 @@ private:
   void inverse_dct();
   void idct_process(std::array<int, 64> &);
   int idct(std::array<int, 64> &, int x, int y);
+  void flip_odd_row();
+  void flip_process(std::array<int, 64> &);
   void to_rgb_image();
   void check_rgb_valid(int &);
 
 public:
   JPEGImage();
   void set_sof_precision(unsigned char);
-  unsigned char get_sof_precision();
   void set_height(int);
-  int get_height();
   void set_width(int);
-  int get_width();
   void set_color_factor(unsigned char, unsigned char, unsigned char);
   void set_color_ht_id(unsigned char, unsigned char);
   void set_qts(int, std::array<int, 64> &);
   void set_hts(int, std::array<int, 16> &, std::vector<int> &);
   void set_data(std::vector<unsigned char> &);
   void decode();
+  void save_to_bmp(const std::string &);
 };
 
 #endif

@@ -15,32 +15,19 @@ void JPEGImage::set_sof_precision(unsigned char sof_precision) {
   this->sof_precision = sof_precision;
 }
 
-unsigned char JPEGImage::get_sof_precision() {
-  return this->sof_precision;
-}
-
 void JPEGImage::set_height(int height) {
   this->height = height;
 }
-
-int JPEGImage::get_height() {
-  return this->height;
-}
-
 void JPEGImage::set_width(int width) {
   this->width = width;
-}
-
-int JPEGImage::get_width() {
-  return this->width;
 }
 
 void JPEGImage::set_color_factor(unsigned char color_id, unsigned char sample_factor, unsigned char qt_id) {
   switch(color_id) {
    case 1:
     this->y_qt_id = static_cast<int>(qt_id);
-    this->y_s_v = sample_factor >> 4;
-    this->y_s_h = sample_factor & 0x0f;
+    this->y_s_h = sample_factor >> 4;
+    this->y_s_v = sample_factor & 0x0f;
     if (this->y_s_v > this->v_max) this->v_max = this->y_s_v;
     if (this->y_s_h > this->h_max) this->h_max = this->y_s_h;
     break;
@@ -94,7 +81,10 @@ void JPEGImage::set_qts(int qt_id, std::array<int, 64> &qt) {
 }
 
 void JPEGImage::set_hts(int ht_id, std::array<int, 16> &digits, std::vector<int> &codewords) {
-  ht_id = convert_ht_id(ht_id);
+  if (ht_id == 0x10)
+    ht_id = 2;
+  else if (ht_id == 0x11)
+    ht_id = 3;
   this->hts_digits[ht_id] = digits;
   this->hts_codewords[ht_id] = codewords;
 }
@@ -112,14 +102,16 @@ void JPEGImage::decode() {
   inverse_zigzag();
   inverse_dct();
   to_rgb_image();
+  std::cerr << "Decoding finished." << std::endl;
 }
 
-int JPEGImage::convert_ht_id(int ht_id) {
-  if (ht_id == 0x10)
-    return 2;
-  if (ht_id == 0x11)
-    return 3;
-  return ht_id;
+void JPEGImage::save_to_bmp(const std::string &filename) {
+  bitmap_image bmp(this->width, this->height);
+  for (int i = 0; i != this->height; i++)
+    for (int j = 0; j != this->width; j++)
+      bmp.set_pixel(j, i, this->image[i][j]);
+
+  bmp.save_image(filename);
 }
 
 void JPEGImage::create_hts() {
@@ -175,11 +167,11 @@ void JPEGImage::decode_data() {
     for (int y_i = 0; y_i != this->y_s_v * this->y_s_h; y_i++) {
       m.y.push_back(build_block(this->y_dc_ht_id, this->y_ac_ht_id));
     }
-    for (int cr_i = 0; cr_i != this->cr_s_v * this->cr_s_h; cr_i++) {
-      m.cr.push_back(build_block(this->cr_dc_ht_id, this->cr_ac_ht_id));
-    }
     for (int cb_i = 0; cb_i != this->cb_s_v * this->cb_s_h; cb_i++) {
       m.cb.push_back(build_block(this->cb_dc_ht_id, this->cb_ac_ht_id));
+    }
+    for (int cr_i = 0; cr_i != this->cr_s_v * this->cr_s_h; cr_i++) {
+      m.cr.push_back(build_block(this->cr_dc_ht_id, this->cr_ac_ht_id));
     }
 
     this->mcus.push_back(m);
@@ -373,12 +365,12 @@ int JPEGImage::idct(std::array<int, 64> &block, int x, int y) {
     }
   }
 
-  return static_cast<int>(std::round(sum / 4)) + 128;
+  return static_cast<int>(std::round(sum / 4));
 }
 
 void JPEGImage::to_rgb_image() {
-  this->image = std::vector<std::vector<int>>(this->height);
-  std::for_each(this->image.begin(), this->image.end(), [&](std::vector<int> &v) { v = std::vector<int>(this->width); } );
+  this->image = std::vector<std::vector<rgb_t>>(this->height);
+  std::for_each(this->image.begin(), this->image.end(), [&](std::vector<rgb_t> &v) { v = std::vector<rgb_t>(this->width); } );
 
   for (int mcu_i = 0; mcu_i != this->mcu_h_size; mcu_i++) {
     for (int mcu_j = 0; mcu_j != this->mcu_w_size; mcu_j++) {
@@ -403,15 +395,20 @@ void JPEGImage::to_rgb_image() {
           int cb_j = j / (this->h_max / this->cb_s_h);
           double color_cb = m.cb[(cb_i / 8) * this->cb_s_h + (cb_j / 8)][(cb_i % 8) * 8 + (cb_j % 8)];
 
-          int r = static_cast<int>(std::round(color_y + 1.402 * (color_cr - 128)));
-          int g = static_cast<int>(std::round(color_y - 0.344136 * (color_cb - 128) - 0.714136 * (color_cr - 128)));
-          int b = static_cast<int>(std::round(color_y + 1.772 * (color_cb - 128)));
+          int r = static_cast<int>(std::round(color_y + 1.402 * color_cr)) + 128;
+          int g = static_cast<int>(std::round(color_y - 0.344136 * color_cb - 0.714136 * color_cr)) + 128;
+          int b = static_cast<int>(std::round(color_y + 1.772 * color_cb)) + 128;
 
           check_rgb_valid(r);
           check_rgb_valid(g);
           check_rgb_valid(b);
 
-          this->image[x][y] = (r << 16) | (g << 8) | b;
+          rgb_t rgb;
+          rgb.red = static_cast<unsigned char>(r);
+          rgb.green = static_cast<unsigned char>(g);
+          rgb.blue = static_cast<unsigned char>(b);
+
+          this->image[x][y] = rgb;
         }
       }
     }

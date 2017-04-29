@@ -25,12 +25,13 @@ namespace Tag {
   static const unsigned char RST7 = 0xd7;
 };
 
-void parse(JPEGImage &, std::string &);
+void parse(JPEGImage &, const std::string &);
 unsigned char get_byte(std::ifstream &);
 int get_2bytes(std::ifstream &);
 void parse_dqt(JPEGImage &, std::ifstream &, int);
 void parse_sof0(JPEGImage &, std::ifstream &, int);
 void parse_dht(JPEGImage &, std::ifstream &, int);
 void parse_sos(JPEGImage &, std::ifstream &, int);
+std::string bmp_filename(std::string);
 
 #endif

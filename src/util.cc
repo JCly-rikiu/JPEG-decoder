@@ -1,6 +1,6 @@
 #include "util.h"
 
-void parse(JPEGImage &image, std::string &filename) {
+void parse(JPEGImage &image, const std::string &filename) {
   // open file
   std::ifstream file(filename, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
@@ -175,4 +175,11 @@ void parse_sos(JPEGImage &image, std::ifstream &file, int length) {
 
   // skip 3bytes (0x00 0x3f 0x00)
   file.seekg(3, file.cur);
+}
+
+std::string bmp_filename(std::string filename) {
+  auto end = filename.find_last_of('.');
+  filename = filename.substr(0, end).append(".bmp");
+
+  return filename;
 }
