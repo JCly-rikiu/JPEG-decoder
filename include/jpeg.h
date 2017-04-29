@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <bitset>
+#include <algorithm>
 #include <cmath>
 
 class JPEGImage {
@@ -39,20 +40,22 @@ private:
   std::array<unsigned int, 16> mask;
   std::vector<mcu> mcus;
   std::vector<unsigned char> data;
+  std::vector<unsigned char>::size_type data_pos;
   unsigned int now;
   int now_length;
   unsigned int buffer;
   int buffer_length;
 
+
   int convert_ht_id(int);
   void create_hts();
   void decode_data();
-  std::array<int, 64> build_block(int &, int, int);
+  std::array<int, 64> build_block(int, int);
   int convert_to_real_value(int, int);
-  codeword ht_process(int &, int);
-  void align(int &);
-  unsigned int ask_buffer_bits(int &, int);
-  unsigned int ask_now_bits(int &, int);
+  codeword ht_process(int);
+  void align();
+  unsigned int ask_buffer_bits(int);
+  unsigned int ask_now_bits(int);
   void dc_diff_decode();
   void dequantize();
   void inverse_zigzag();

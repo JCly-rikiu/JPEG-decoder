@@ -12,11 +12,11 @@ void parse(JPEGImage &image, std::string &filename) {
   std::vector<unsigned char> data;
   while (!file.eof()) {
     unsigned char tag = 0;
-    file.read(reinterpret_cast<char*>(&tag), 1);
+    tag = get_byte(file);
 
     if (tag == Tag::FF) {
       int length;
-      file.read(reinterpret_cast<char*>(&tag), 1);
+      tag = get_byte(file);
       switch (tag) {
        case Tag::SOI:
         std::cerr << "SOI" << std::endl;
@@ -81,10 +81,9 @@ void parse(JPEGImage &image, std::string &filename) {
 }
 
 unsigned char get_byte(std::ifstream &file) {
-  unsigned char value;
-  file.read(reinterpret_cast<char*>(&value), 1);
-
-  return value;
+  char value;
+  file.read(&value, 1);
+  return static_cast<unsigned char>(value);
 }
 
 int get_2bytes(std::ifstream &file) {
@@ -121,15 +120,19 @@ void parse_sof0(JPEGImage &image, std::ifstream &file, int length) {
   // 1byte (image precision)
   image.set_sof_precision(get_byte(file));
   // 4bytes (image height/image width)
-  image.set_height(static_cast<int>(get_2bytes(file)));
-  image.set_width(static_cast<int>(get_2bytes(file)));
+  image.set_height(get_2bytes(file));
+  image.set_width(get_2bytes(file));
 
   // skip 1byte (1:gray scale, 3:YCrCb, 4:CMYK)
   file.seekg(1, file.cur);
 
   // (Y Cr Cb) each 3bytes (color_id, sample_factor, qt_id)
-  for (int i = 0; i != 3; i++)
-    image.set_color_factor(get_byte(file), get_byte(file), get_byte(file));
+  for (int i = 0; i != 3; i++) {
+    unsigned char color_id = get_byte(file);
+    unsigned char sample_factor = get_byte(file);
+    unsigned char qt_id = get_byte(file);
+    image.set_color_factor(color_id, sample_factor, qt_id);
+  }
 }
 
 void parse_dht(JPEGImage &image, std::ifstream &file, int length) {
@@ -162,8 +165,11 @@ void parse_sos(JPEGImage &image, std::ifstream &file, int length) {
   file.seekg(1, file.cur);
 
   // (Y Cr Cb) each 2bytes (color_id, DC_ht_id/AC_ht_id)
-  for (int i = 0; i != 3; i++)
-    image.set_color_ht_id(get_byte(file), get_byte(file));
+  for (int i = 0; i != 3; i++) {
+    unsigned char color_id = get_byte(file);
+    unsigned char ht_id = get_byte(file);
+    image.set_color_ht_id(color_id, ht_id);
+  }
 
   // skip 3bytes (0x00 0x3f 0x00)
   file.seekg(3, file.cur);

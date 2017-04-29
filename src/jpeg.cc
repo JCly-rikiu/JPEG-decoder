@@ -4,6 +4,7 @@ JPEGImage::JPEGImage() {
   this->v_max = 0;
   this->h_max = 0;
 
+  this->data_pos = 0;
   this->now = 0;
   this->now_length = 0;
   this->buffer = 0;
@@ -168,43 +169,42 @@ void JPEGImage::decode_data() {
   if (this->width % mcu_width != 0) mcu_w_size++;
   std::cerr << "mcu height num: " << mcu_h_size << " mcu width num: " << mcu_w_size << std::endl;
 
-  int data_pos = 0;
   for (int mcu_i = 0; mcu_i != mcu_h_size * mcu_w_size; mcu_i++) {
     mcu m;
     m.height = mcu_height;
     m.width = mcu_width;
 
     for (int y_i = 0; y_i != this->y_s_v * this->y_s_h; y_i++) {
-      m.y.push_back(build_block(data_pos, this->y_dc_ht_id, this->y_ac_ht_id));
+      m.y.push_back(build_block(this->y_dc_ht_id, this->y_ac_ht_id));
     }
     for (int cr_i = 0; cr_i != this->cr_s_v * this->cr_s_h; cr_i++) {
-      m.cr.push_back(build_block(data_pos, this->cr_dc_ht_id, this->cr_ac_ht_id));
+      m.cr.push_back(build_block(this->cr_dc_ht_id, this->cr_ac_ht_id));
     }
     for (int cb_i = 0; cb_i != this->cb_s_v * this->cb_s_h; cb_i++) {
-      m.cb.push_back(build_block(data_pos, this->cb_dc_ht_id, this->cb_ac_ht_id));
+      m.cb.push_back(build_block(this->cb_dc_ht_id, this->cb_ac_ht_id));
     }
 
     this->mcus.push_back(m);
   }
 
-  std::cerr << "data pos: " << data_pos << std::endl;
+  std::cerr << "data pos: " << this->data_pos << std::endl;
 }
 
-std::array<int, 64> JPEGImage::build_block(int &data_pos, int dc_ht_id, int ac_ht_id) {
+std::array<int, 64> JPEGImage::build_block(int dc_ht_id, int ac_ht_id) {
   std::array<int, 64> block = {};
 
   int count = 0;
-  codeword c = ht_process(data_pos, dc_ht_id);
-  block[count++]  = convert_to_real_value(c.value, ask_now_bits(data_pos, c.value));
+  codeword c = ht_process(dc_ht_id);
+  block[count++]  = convert_to_real_value(c.value, ask_now_bits(c.value));
 
   while (count < 64) {
-    c = ht_process(data_pos, ac_ht_id);
+    c = ht_process(ac_ht_id);
     if (c.value == 0)
       break;
     int run = c.value >> 4;
     for (int i = 0; i != run; i++)
       block[count++] = 0;
-    block[count++] = convert_to_real_value(c.value & 0x0f, ask_now_bits(data_pos, c.value & 0x0f));
+    block[count++] = convert_to_real_value(c.value & 0x0f, ask_now_bits(c.value & 0x0f));
   }
 
   return block;
@@ -221,11 +221,11 @@ int JPEGImage::convert_to_real_value(int length, int pos) {
     return -temp + diff + 1;
 }
 
-JPEGImage::codeword JPEGImage::ht_process(int &data_pos, int ht_id) {
-  align(data_pos);
+JPEGImage::codeword JPEGImage::ht_process(int ht_id) {
+  align();
   for (codeword c : this->hts[ht_id]) {
     if (c.codeword == (this->mask[c.length - 1] & this->now)) {
-      ask_now_bits(data_pos, c.length);
+      ask_now_bits(c.length);
       return c;
     }
   }
@@ -233,18 +233,18 @@ JPEGImage::codeword JPEGImage::ht_process(int &data_pos, int ht_id) {
   return codeword { 0, 0, -1 };
 }
 
-void JPEGImage::align(int &data_pos) {
-  this->now |= ask_buffer_bits(data_pos, 16 - this->now_length);
+void JPEGImage::align() {
+  this->now |= ask_buffer_bits(16 - this->now_length);
   this->now_length = 16;
 }
 
-unsigned int JPEGImage::ask_buffer_bits(int &data_pos, int bits) {
+unsigned int JPEGImage::ask_buffer_bits(int bits) {
   if (bits == 0)
     return 0;
 
-  while (this->buffer_length <= 16 && data_pos < this->data.size()) {
+  while (this->buffer_length <= 16 && this->data_pos < this->data.size()) {
     this->buffer >>= 24 - this->buffer_length;
-    this->buffer |= static_cast<unsigned int>(this->data[data_pos++]);
+    this->buffer |= static_cast<unsigned int>(this->data[this->data_pos++]);
     this->buffer <<= 24 - this->buffer_length;
     this->buffer_length += 8;
   }
@@ -257,11 +257,11 @@ unsigned int JPEGImage::ask_buffer_bits(int &data_pos, int bits) {
   return temp;
 }
 
-unsigned int JPEGImage::ask_now_bits(int &data_pos, int bits) {
+unsigned int JPEGImage::ask_now_bits(int bits) {
   if (bits == 0)
     return 0;
 
-  align(data_pos);
+  align();
 
   unsigned int temp = this->mask[bits - 1] & this->now;
   temp >>= 16 - bits;

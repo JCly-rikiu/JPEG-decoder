@@ -1,4 +1,4 @@
-COMPILER = clang++
+COMPILER = g++
 
 SRC_DIR = ./src
 OBJ_DIR = ./obj
