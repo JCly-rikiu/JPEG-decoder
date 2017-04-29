@@ -52,6 +52,7 @@ private:
   void align(int &);
   unsigned int ask_buffer_bits(int &, int);
   unsigned int ask_now_bits(int &, int);
+  void dc_diff_decode();
 
 public:
   JPEGImage();

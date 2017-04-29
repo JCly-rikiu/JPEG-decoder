@@ -104,8 +104,9 @@ void JPEGImage::set_data(std::vector<unsigned char> &data) {
 
 void JPEGImage::decode() {
   std::cerr << "Start decoding..." << std::endl;
-  this->create_hts();
-  this->decode_data();
+  create_hts();
+  decode_data();
+  dc_diff_decode();
 }
 
 int JPEGImage::convert_ht_id(int ht_id) {
@@ -156,13 +157,13 @@ void JPEGImage::create_hts() {
 void JPEGImage::decode_data() {
   int mcu_height = static_cast<int>(this->v_max) * 8;
   int mcu_width = static_cast<int>(this->h_max) * 8;
-  std::cerr << "mcu_height: " << mcu_height << " mcu_width: " << mcu_width << std::endl;
+  std::cerr << "mcu height pixel: " << mcu_height << " mcu width pixel: " << mcu_width << std::endl;
 
   int mcu_h_size = this->height / mcu_height;
   if (this->height % mcu_height != 0) mcu_h_size++;
   int mcu_w_size = this->width / mcu_width;
   if (this->width % mcu_width != 0) mcu_w_size++;
-  std::cerr << mcu_h_size << " " << mcu_w_size << std::endl;
+  std::cerr << "mcu height num: " << mcu_h_size << " mcu width num: " << mcu_w_size << std::endl;
 
   int data_pos = 0;
   for (int mcu_i = 0; mcu_i != mcu_h_size * mcu_w_size; mcu_i++) {
@@ -183,7 +184,7 @@ void JPEGImage::decode_data() {
     this->mcus.push_back(m);
   }
 
-  std::cerr << data.size() << std::endl;
+  std::cerr << "data pos: " << data_pos << std::endl;
 }
 
 std::array<int, 64> JPEGImage::build_block(int &data_pos, int dc_ht_id, int ac_ht_id) {
@@ -230,8 +231,6 @@ JPEGImage::codeword JPEGImage::ht_process(int &data_pos, int ht_id) {
 }
 
 void JPEGImage::align(int &data_pos) {
-  if (this->now_length == 16)
-    return ;
   this->now |= ask_buffer_bits(data_pos, 16 - this->now_length);
   this->now_length = 16;
 }
@@ -267,4 +266,25 @@ unsigned int JPEGImage::ask_now_bits(int &data_pos, int bits) {
   this->now_length -= bits;
 
   return temp;
+}
+
+void JPEGImage::dc_diff_decode() {
+  int last_y = 0;
+  int last_cr = 0;
+  int last_cb = 0;
+
+  for (auto &m : this->mcus) {
+    for (auto &block : m.y) {
+      block[0] += last_y;
+      last_y = block[0];
+    }
+    for (auto &block : m.cr) {
+      block[0] += last_cr;
+      last_cr = block[0];
+    }
+    for (auto &block : m.cb) {
+      block[0] += last_cb;
+      last_cb = block[0];
+    }
+  }
 }
