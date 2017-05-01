@@ -73,16 +73,21 @@ void parse(JPEGImage &image, const std::string &filename) {
           break;
         }
 
-        if (tag >= Tag::RST0 && tag <= Tag::RST7) {
-          break;
+        if (image_data) {
+          if (!(tag >= Tag::RST0 && tag <= Tag::RST7))
+            data.push_back(tag);
+        } else {
+          length = get_2bytes(file) - 2;
+          std::cerr << "unknow: 0x" << std::hex << static_cast<int>(tag) << std::endl;
+          std::cerr << "  legnth: " << std::dec << length << std::endl;
+          file.seekg(length, file.cur);
         }
-
-        if (image_data)
-          data.push_back(tag);
       }
     } else {
       if (image_data)
         data.push_back(tag);
+      else
+        std::cerr << "0x" << std::hex << static_cast<int>(tag) << std::endl;
     }
   }
 
