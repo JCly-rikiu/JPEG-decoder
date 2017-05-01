@@ -6,6 +6,7 @@
 #include <vector>
 #include <bitset>
 #include <algorithm>
+#include <numeric>
 #include <cmath>
 #include <ctime>
 
@@ -66,8 +67,7 @@ private:
   void inverse_zigzag();
   void zigzag_process(std::array<int, 64> &, std::array<int, 64> &);
   void inverse_dct();
-  void idct_process(std::array<int, 64> &);
-  int idct(std::array<int, 64> &, int x, int y);
+  void idct_process(std::array<int, 64> &, std::array<std::array<double, 64>, 64> &);
   void flip_odd_row();
   void flip_process(std::array<int, 64> &);
   void to_rgb_image();

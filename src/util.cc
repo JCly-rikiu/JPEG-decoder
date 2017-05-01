@@ -4,7 +4,7 @@ void parse(JPEGImage &image, const std::string &filename) {
   // open file
   std::ifstream file(filename, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
-    std::cerr << "Can not open jpeg file \"" << filename << "\"" << std::endl;
+    std::cerr << "[ERROR] Can not open jpeg file \"" << filename << "\"" << std::endl;
     exit(EXIT_FAILURE);
   }
 

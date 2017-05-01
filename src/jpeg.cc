@@ -366,39 +366,39 @@ void JPEGImage::inverse_dct() {
   std::cerr << "[Inverse DCT] ";
   std::time_t t = std::time(nullptr);
 
+  std::array<std::array<double, 64>, 64> table {};
+  const double pi = std::acos(-1);
+  for (int x = 0; x != 8; x++) {
+    for (int y = 0; y != 8; y++) {
+      for (int u = 0; u != 8; u++) {
+        for (int v = 0; v != 8; v++) {
+          double c = 1.0;
+          if (u == 0) c *= (1 / std::sqrt(2));
+          if (v == 0) c *= (1 / std::sqrt(2));
+
+          table[x * 8 + y][u * 8 + v] += c * std::cos((2 * x + 1) * u * pi / 16) * std::cos((2 * y + 1) * v * pi / 16) / 4;
+        }
+      }
+    }
+  }
+
   for (auto &m : this->mcus) {
     for (auto &block : m.y)
-      idct_process(block);
+      idct_process(block, table);
     for (auto &block : m.cr)
-      idct_process(block);
+      idct_process(block, table);
     for (auto &block : m.cb)
-      idct_process(block);
+      idct_process(block, table);
   }
 
   std::cerr << std::time(nullptr) - t << "s." << std::endl;
 }
 
-void JPEGImage::idct_process(std::array<int, 64> &block) {
+void JPEGImage::idct_process(std::array<int, 64> &block, std::array<std::array<double, 64>, 64> &table) {
   auto temp = block;
   for (int i = 0; i != 8; i++)
     for (int j = 0; j != 8; j++)
-      block[i * 8 + j] = idct(temp, i, j);
-}
-
-int JPEGImage::idct(std::array<int, 64> &block, int x, int y) {
-  double sum = 0.0;
-  const double pi = std::acos(-1);
-  for (int u = 0; u != 8; u++) {
-    for (int v = 0; v != 8; v++) {
-      double c = 1.0;
-      if (u == 0) c *= (1 / std::sqrt(2));
-      if (v == 0) c *= (1 / std::sqrt(2));
-
-      sum += c * block[u * 8 + v] * std::cos((2 * x + 1) * u * pi / 16) * std::cos((2 * y + 1) * v * pi / 16);
-    }
-  }
-
-  return static_cast<int>(std::round(sum / 4));
+      block[i * 8 + j] = std::round(std::inner_product(temp.begin(), temp.end(), table[i * 8 + j].begin(), 0.0));
 }
 
 void JPEGImage::to_rgb_image() {
