@@ -1,15 +1,15 @@
 [JPEG decoder homework]
 
 1. How to compile:
-  $$ cd jpeg-decoder/
-  $$ make
+  $ cd jpeg-decoder/
+  $ make
 
   Description:
     This command will compile source files.
 
 2. How to run:
-  $$ cd jpeg-decoder/
-  $$ ./bin/jpeg_decoder [file.jpg]
+  $ cd jpeg-decoder/
+  $ ./bin/jpeg_decoder [file.jpg]
 
   Description:
     This command will decode JPEG image and save as BMP image.
