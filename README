@@ -1,30 +1,24 @@
-all:
-	@echo "[JPEG decoder homework]"
-	@echo ""
-	@echo "1. How to compile:"
-	@echo "  $$ cd jpeg-decoder/"
-	@echo "  $$ make"
-	@echo ""
-	@echo "  Description:"
-	@echo "    This command will compile source files."
-	@echo ""
-	@echo "2. How to run:"
-	@echo "  $$ cd jpeg-decoder/"
-	@echo "  $$ ./bin/jpeg_decoder [file.jpg]"
-	@echo ""
-	@echo "  Description:"
-	@echo "    This command will decode JPEG image and save as BMP image."
-	@echo "    The BMP image uses the same filename as JPEG file."
-	@echo "    The BMP image is stored in the same directory as JPEG file."
-	@echo "    ex: [filename.jpg]              -> [filename.bmp]"
-	@echo "    ex: [./some/where/filename.jpg] -> [./some/where/filename.bmp]"
-	@echo ""
-	@echo "3. My environment:"
-	@echo ""
-	@echo "  Compiler: clang++ version 4.0.0"
-	@echo "  OS: macOS Sierra 10.12.4"
-	@echo ""
-	@echo "4. Bonus:"
-	@echo ""
-	@echo "  Support DRI header"
-	@echo ""
+[JPEG decoder homework]
+
+1. How to compile:
+  $$ cd jpeg-decoder/
+  $$ make
+
+  Description:
+    This command will compile source files.
+
+2. How to run:
+  $$ cd jpeg-decoder/
+  $$ ./bin/jpeg_decoder [file.jpg]
+
+  Description:
+    This command will decode JPEG image and save as BMP image.
+    The BMP image uses the same filename as JPEG file.
+    The BMP image is stored in the same directory as JPEG file.
+    ex: [filename.jpg]              -> [filename.bmp]
+    ex: [./some/where/filename.jpg] -> [./some/where/filename.bmp]
+
+3. My environment:
+
+  Compiler: clang++ version 4.0.0
+  OS: macOS Sierra 10.12.4
